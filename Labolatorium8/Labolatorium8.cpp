@@ -6,58 +6,6 @@
 #include <map>
 #include <fstream>
 
-class range
-{
-    int _begin;
-    int _end;
-    int _stride;
-public:
-    range(int begin, int end, int stride = 1) : _begin(begin), _end(end), _stride(stride)
-    {
-        // Warunek na poprawno�� zakresu np -1..10 z krokiem -1 d��y do -inf.
-        if (!((begin >= end && stride < 0) || (end >= begin && stride > 0)))
-        {
-            throw std::logic_error("Invalid Range");
-        }
-    }
-
-    //Sama klasa iteratora definiuj�ca wymagane funkcje
-    //składnia 
-    //         for(auto i : iter) 
-    //jest odpowiednikiem
-    //         for(auto i = iter.begin(); i!=iter.end(); i++)
-    // Więc należy zdefiniować wszystkie potrzebne własności. begin() end() zwracają specjalną klasę iteratora.
-    class range_iter
-    {
-    public:
-        int _stride;
-        int _pos;
-
-        range_iter& operator++()
-        {
-            this->_pos += _stride;
-            return *this;
-        }
-        bool operator!=(range_iter& other) const
-        {
-            return other._pos != _pos;
-        }
-        int operator*() const
-        {
-            return _pos;
-        }
-    };
-
-    [[nodiscard]] range_iter begin() const
-    {
-        return range_iter{ _stride, _begin };
-    }
-    [[nodiscard]] range_iter end() const
-    {
-        return range_iter{ _stride, _end };
-    }
-};
-
 class BenchmarkRegistry
 {
 public:
@@ -247,17 +195,18 @@ template<typename T>
 void insertionSort(std::vector<T>& S)
 {
     __assume(S.size() > 0);
-    for (size_t i = 0; i < S.size() - 1; i++)
+    for (int i = 1; i < S.size(); i++)
     {
         const auto aux = S[i];
-        for (size_t j = i - 1; j < S.size(); j++)
+        int j = i - 1;
+        for (j = i - 1; j >= 0; j--)
         {
             if (S[j] > aux)
                 S[j + 1] = S[j];
             else
                 break;
         }
-        S[i + 1] = aux;
+        S[j + 1] = aux;
     }
 }
 
@@ -265,17 +214,22 @@ template<typename T>
 void insertionSort(std::vector<T>& S, size_t from, size_t to)
 {
     __assume(S.size() > 0);
-    for (size_t i = from; i < to - 1; i++)
+    __assume(S.size() <= to);
+    __assume(S.size() >= from);
+    __assume(to >= from);
+
+    for (int i = from; i < to; i++)
     {
         const auto aux = S[i];
-        for (size_t j = i - 1; j < to; j++)
+        int j = i - 1;
+        for (j = i - 1; j >= 0; j--)
         {
             if (S[j] > aux)
                 S[j + 1] = S[j];
             else
                 break;
         }
-        S[i + 1] = aux;
+        S[j + 1] = aux;
     }
 }
 
@@ -297,12 +251,12 @@ template<typename T>
 void bubbleSort(std::vector<T>& S)
 {
     __assume(S.size() > 0);
-    for (size_t i = 0; i < S.size(); i++)
+    for (size_t i = 1; i < S.size(); i++)
     {
-        for (size_t j = i; j < S.size(); j++)
+        for (size_t j = S.size()-1 ; j >= i; j--)
         {
-            if (S[i] < S[j])
-                std::swap(S[i], S[j]);
+            if (S[j] < S[j-1])
+                std::swap(S[j], S[j-1]);
         }
     }
 }
@@ -339,7 +293,7 @@ void OptimizedQuickSort(std::vector<T>& S, size_t low, size_t high)
 {
     __assume(high > low);
 
-    if ((high - low) <= 1000) {
+    if ((high - low) <= 1500) {
         insertionSort(S, low, high);
         return;
     }
@@ -382,7 +336,6 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class SelectionSortBenchmark : public Benchmark
 {
 public:
@@ -401,11 +354,10 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class InsertionSortBenchmark : public Benchmark
 {
 public:
-    const size_t sort_iterations = 1000;
+    const size_t sort_iterations = 1;
 	std::vector<std::vector<int>> data;
     size_t size;
     int max;
@@ -432,7 +384,6 @@ public:
     long double get_X_mesurment() override { return size; }
     long double get_Y_mesurment() override { return total_time / static_cast<long double>(iterations) / sort_iterations; }
 };
-
 class BubbleSortBenchmark2 : public Benchmark
 {
 public:
@@ -452,7 +403,6 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class SelectionSortBenchmark2 : public Benchmark
 {
 public:
@@ -472,11 +422,10 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class InsertionSortBenchmark2 : public Benchmark
 {
 public:
-    const size_t sort_iterations = 1000;
+    const size_t sort_iterations = 1;
     std::vector<std::vector<int>> data;
     size_t size;
     int max;
@@ -503,7 +452,6 @@ public:
     long double get_X_mesurment() override { return size; }
     long double get_Y_mesurment() override { return total_time / static_cast<long double>(iterations) / sort_iterations; }
 };
-
 class StdSortBenchmark : public Benchmark
 {
 public:
@@ -522,7 +470,6 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class QuickSortBenchmark : public Benchmark
 {
 public:
@@ -541,7 +488,6 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class QuickSortBenchmark2 : public Benchmark
 {
 public:
@@ -561,7 +507,6 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class BetterQuickSortBenchmark : public Benchmark
 {
 public:
@@ -580,7 +525,6 @@ public:
     }
     long double get_X_mesurment() override { return size; }
 };
-
 class BetterQuickSortBenchmark2 : public Benchmark
 {
 public:
@@ -609,13 +553,19 @@ void TEST_SORT()
     auto data_cpy = data;
     F(data);
     std::sort(data_cpy.begin(), data_cpy.end());
-    assert(std::is_sorted(data.rbegin(), data.rend()));
+    //assert(std::is_sorted(data.begin(), data.end()));
     for (size_t i = 0; i < data.size(); i++)
         assert(data[i] == data_cpy[i]);
 }
 
 int main()
 {
+    constexpr bool enable_std_benchmarks = false;
+    constexpr bool enable_quick_benchmarks = true;
+    constexpr bool enable_bubble_benchmarks = false;
+    constexpr bool enable_insertion_benchmarks = false;
+    constexpr bool enable_selection_benchmarks = false;
+
 	TEST_SORT<bubbleSort<int>>();
     TEST_SORT<insertionSort<int>>();
     TEST_SORT<selectionSort<int>>();
@@ -627,51 +577,66 @@ int main()
 
     BenchmarkRegistry registry;
 
-    const auto strides = { 100, 200, 300, 1000, 2000, 3000, 5000, 10'000, 11'000, 12'000, 13'000, 15'000, 20'000, 21'000 };
+    const auto strides = { 100, 200, 300, 1000, 2000, 3000, 5000, 10'000, 11'000, 12'000, 13'000, 15'000, 20'000, 21'000, 25'000, 30'000, 31'000, 32'000};
 
-    const auto strides_long = { 25'000, 30'000, 50'000, 100'000, 120'000, 130'000, 150'000, 200'000, 300'000};
+    const auto strides_long = { 50'000, 100'000, 120'000, 130'000, 150'000, 160'000, 170'000, 200'000, 300'000};
 
-    for (const auto bench_case : strides)
-		StdSortBenchmark(bench_case, 10000).runBenchmark("Std").generate_summary().register_output(registry);
-    for (const auto bench_case : strides_long)
-        StdSortBenchmark(bench_case, 10000).runBenchmark("Std").generate_summary().register_output(registry);
 
-    for (const auto bench_case : strides)
-		QuickSortBenchmark(bench_case, 10000).runBenchmark("Quick").generate_summary().register_output(registry);
-    for (const auto bench_case : strides)
-		QuickSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Quick Almost Sorted").generate_summary().register_output(registry);
+    if constexpr (enable_std_benchmarks) 
+    {
+        for (const auto bench_case : strides)
+            StdSortBenchmark(bench_case, 10000).runBenchmark("Std").generate_summary().register_output(registry);
+        for (const auto bench_case : strides_long)
+            StdSortBenchmark(bench_case, 10000).runBenchmark("Std").generate_summary().register_output(registry);
+    }
 
-    for (const auto bench_case : strides)
-		BetterQuickSortBenchmark(bench_case, 10000).runBenchmark("Better Quick").generate_summary().register_output(registry);
-    for (const auto bench_case : strides_long)
-        BetterQuickSortBenchmark(bench_case, 10000).runBenchmark("Better Quick").generate_summary().register_output(registry);
+    if constexpr (enable_quick_benchmarks)
+    {
+        for (const auto bench_case : strides)
+            QuickSortBenchmark(bench_case, 10000).runBenchmark("Quick").generate_summary().register_output(registry);
+        for (const auto bench_case : strides)
+            QuickSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Quick Almost Sorted").generate_summary().register_output(registry);
 
-    for (const auto bench_case : strides)
-		BetterQuickSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Better Quick Almost Sorted").generate_summary().register_output(registry);
-    for (const auto bench_case : strides_long)
-        BetterQuickSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Better Quick Almost Sorted").generate_summary().register_output(registry);
+        for (const auto bench_case : strides)
+            BetterQuickSortBenchmark(bench_case, 10000).runBenchmark("Better Quick").generate_summary().register_output(registry);
+        for (int i = 100'000; i < 300'000; i += 5'000)
+            BetterQuickSortBenchmark(i, 10000).runBenchmark("Better Quick").generate_summary().register_output(registry);
 
-    for (const auto bench_case : strides)
-		BubbleSortBenchmark(bench_case, 10000).runBenchmark("Bubble").generate_summary().register_output(registry);
 
-    for (const auto bench_case : strides)
-		SelectionSortBenchmark(bench_case, 10000).runBenchmark("Selection").generate_summary().register_output(registry);
+        for (const auto bench_case : strides)
+            BetterQuickSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Better Quick Almost Sorted").generate_summary().register_output(registry);
+        for (int i = 100'000; i< 300'000; i+=5'000)
+            BetterQuickSortBenchmark2(i, 10000, 0.3).runBenchmark("Better Quick Almost Sorted").generate_summary().register_output(registry);
+    }
+    if constexpr (enable_bubble_benchmarks)
+    {
+        for (const auto bench_case : strides)
+            BubbleSortBenchmark(bench_case, 10000).runBenchmark("Bubble").generate_summary().register_output(registry);
 
-    for (const auto bench_case : strides)
-		InsertionSortBenchmark(bench_case, 10000).runBenchmark("Insertion").generate_summary().register_output(registry);
-    for (const auto bench_case : strides_long)
-        InsertionSortBenchmark(bench_case, 10000).runBenchmark("Insertion").generate_summary().register_output(registry);
+        for (const auto bench_case : strides)
+            BubbleSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Bubble Almost Sorted").generate_summary().register_output(registry);
+    }
 
-    for (const auto bench_case : strides)
-		BubbleSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Bubble Almost Sorted").generate_summary().register_output(registry);
+    if constexpr (enable_selection_benchmarks)
+    {
+        for (const auto bench_case : strides)
+            SelectionSortBenchmark(bench_case, 10000).runBenchmark("Selection").generate_summary().register_output(registry);
+    
+        for (const auto bench_case : strides)
+            SelectionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Selection Almost Sorted").generate_summary().register_output(registry);
+    }
 
-    for (const auto bench_case : strides)
-		SelectionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Selection Almost Sorted").generate_summary().register_output(registry);
+    if constexpr (enable_insertion_benchmarks)
+    {
+        for (const auto bench_case : strides)
+            InsertionSortBenchmark(bench_case, 10000).runBenchmark("Insertion").generate_summary().register_output(registry);
+  
+        for (const auto bench_case : strides)
+            InsertionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Insertion Almost Sorted").generate_summary().register_output(registry);
+        for (const auto bench_case : strides_long)
+            InsertionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Insertion Almost Sorted").generate_summary().register_output(registry);
+    }
 
-    for (const auto bench_case : strides)
-		InsertionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Insertion Almost Sorted").generate_summary().register_output(registry);
-    for (const auto bench_case : strides_long)
-        InsertionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Insertion Almost Sorted").generate_summary().register_output(registry);
 
-    registry.generate_csv("C:\\Users\\Maciek\\source\\repos\\Labolatorium8\\Benchmarks");
+    registry.generate_csv("C:\\Users\\Maciej\\source\\repos\\SortingAlgotithms\\Benchmarks2");
 }
