@@ -44,9 +44,9 @@ public:
             {
                 outfile.open(path + "/" + name + ".csv", std::ios::trunc | std::ios::out);
 
-                outfile << "X, Y" << std::endl;
+                outfile << "X,Y" << std::endl;
                 for (const auto& [x, y] : XY)
-                    outfile << x << ", " << y << std::endl;
+                    outfile << x << "," << y << std::endl;
 
                 outfile.close();
             }
@@ -75,7 +75,7 @@ public:
         total_time = 0.0;
         iterations = 0;
 
-        while (total_time < max_time && iterations < 500'00)
+        while (total_time < max_time && iterations < 50'000)
         {
             setup();
 
@@ -270,46 +270,64 @@ void print(std::vector<T>& data)
 }
 
 template<typename T>
-void quickSort(std::vector<T>& S, size_t low, size_t high)
+size_t partition(std::vector<T>& S, int low, int high)
 {
-    if (low == high)
+    __assume(high >= low);
+
+    int pivot = S[high];
+    int i = (low - 1);
+
+    for (int j = low; j < high; j++) {
+        if (S[j] <= pivot) {
+            i += 1;
+
+            std::swap(S[i], S[j]);
+        }
+    }
+    std::swap(S[i + 1], S[high]);
+
+    return i + 1;
+}
+
+template<typename T>
+void quickSort(std::vector<T>& S, int low, int high)
+{
+    if (low >= high)
         return;
-    T pivot = (low + high) / 2;
 
-    std::partition(S.begin(), S.end(), [pivot](const auto& em) { return em < pivot; });
+    const size_t pivot = partition(S, low, high);
 
-    quickSort(S, low, pivot);
+    quickSort(S, low, pivot - 1);
     quickSort(S, pivot + 1, high);
 }
 
 template<typename T>
 void quickSort(std::vector<T>& S)
 {
-    quickSort(S, 0, S.size());
+    quickSort(S, 0, S.size()-1);
 }
 
 template<typename T>
-void OptimizedQuickSort(std::vector<T>& S, size_t low, size_t high)
+void OptimizedQuickSort(std::vector<T>& S, int low, int high)
 {
-    __assume(high > low);
+    __assume(high >= low);
 
-    if ((high - low) <= 1500) {
-        insertionSort(S, low, high);
+    if ((high - low) <= 33) 
+    {
+        insertionSort(S, low, high+1);
         return;
     }
 
-    T pivot = (low + high) / 2;
+    const size_t pivot = partition(S, low, high);
 
-    std::partition(S.begin(), S.end(), [pivot](const auto& em) { return em < pivot; });
-
-    OptimizedQuickSort(S, low, pivot);
+    OptimizedQuickSort(S, low, pivot - 1);
     OptimizedQuickSort(S, pivot + 1, high);
 }
 
 template<typename T>
 void OptimizedQuickSort(std::vector<T>& S)
 {
-    OptimizedQuickSort(S, 0, S.size());
+    OptimizedQuickSort(S, 0, S.size()-1);
 }
 
 template<typename T>
@@ -553,18 +571,18 @@ void TEST_SORT()
     auto data_cpy = data;
     F(data);
     std::sort(data_cpy.begin(), data_cpy.end());
-    //assert(std::is_sorted(data.begin(), data.end()));
+    assert(std::is_sorted(data.begin(), data.end()));
     for (size_t i = 0; i < data.size(); i++)
         assert(data[i] == data_cpy[i]);
 }
 
 int main()
 {
-    constexpr bool enable_std_benchmarks = false;
+    constexpr bool enable_std_benchmarks = true;
     constexpr bool enable_quick_benchmarks = true;
-    constexpr bool enable_bubble_benchmarks = false;
-    constexpr bool enable_insertion_benchmarks = false;
-    constexpr bool enable_selection_benchmarks = false;
+    constexpr bool enable_bubble_benchmarks = true;
+    constexpr bool enable_insertion_benchmarks = true;
+    constexpr bool enable_selection_benchmarks = true;
 
 	TEST_SORT<bubbleSort<int>>();
     TEST_SORT<insertionSort<int>>();
@@ -579,7 +597,7 @@ int main()
 
     const auto strides = { 100, 200, 300, 1000, 2000, 3000, 5000, 10'000, 11'000, 12'000, 13'000, 15'000, 20'000, 21'000, 25'000, 30'000, 31'000, 32'000};
 
-    const auto strides_long = { 50'000, 100'000, 120'000, 130'000, 150'000, 160'000, 170'000, 200'000, 300'000};
+    const auto strides_long = { 50'000, 60'000, 70'000, 80'000, 90'000, 100'000};
 
 
     if constexpr (enable_std_benchmarks) 
@@ -588,25 +606,27 @@ int main()
             StdSortBenchmark(bench_case, 10000).runBenchmark("Std").generate_summary().register_output(registry);
         for (const auto bench_case : strides_long)
             StdSortBenchmark(bench_case, 10000).runBenchmark("Std").generate_summary().register_output(registry);
+        for (int i = 100'000; i < 300'000; i += 5'000)
+            StdSortBenchmark(i, 10000).runBenchmark("Std").generate_summary().register_output(registry);
+        for (int i = 2; i < 100; i += 1)
+            StdSortBenchmark(i, 10000).runBenchmark("Std").generate_summary().register_output(registry);
     }
 
     if constexpr (enable_quick_benchmarks)
     {
         for (const auto bench_case : strides)
             QuickSortBenchmark(bench_case, 10000).runBenchmark("Quick").generate_summary().register_output(registry);
-        for (const auto bench_case : strides)
-            QuickSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Quick Almost Sorted").generate_summary().register_output(registry);
+        for (const auto bench_case : strides_long)
+            QuickSortBenchmark(bench_case, 10000).runBenchmark("Quick").generate_summary().register_output(registry);
+        for (int i = 100'000; i < 300'000; i += 5'000)
+            QuickSortBenchmark(i, 10000).runBenchmark("Quick").generate_summary().register_output(registry);
+        for (int i = 2; i < 100; i += 1)
+            QuickSortBenchmark(i, 10000).runBenchmark("Quick").generate_summary().register_output(registry);
 
         for (const auto bench_case : strides)
             BetterQuickSortBenchmark(bench_case, 10000).runBenchmark("Better Quick").generate_summary().register_output(registry);
         for (int i = 100'000; i < 300'000; i += 5'000)
             BetterQuickSortBenchmark(i, 10000).runBenchmark("Better Quick").generate_summary().register_output(registry);
-
-
-        for (const auto bench_case : strides)
-            BetterQuickSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Better Quick Almost Sorted").generate_summary().register_output(registry);
-        for (int i = 100'000; i< 300'000; i+=5'000)
-            BetterQuickSortBenchmark2(i, 10000, 0.3).runBenchmark("Better Quick Almost Sorted").generate_summary().register_output(registry);
     }
     if constexpr (enable_bubble_benchmarks)
     {
@@ -630,13 +650,18 @@ int main()
     {
         for (const auto bench_case : strides)
             InsertionSortBenchmark(bench_case, 10000).runBenchmark("Insertion").generate_summary().register_output(registry);
-  
+        for (const auto bench_case : strides_long)
+            InsertionSortBenchmark(bench_case, 10000).runBenchmark("Insertion").generate_summary().register_output(registry);
+        for (int i = 2; i < 100; i += 1)
+            InsertionSortBenchmark(i, 10000).runBenchmark("Insertion").generate_summary().register_output(registry);
         for (const auto bench_case : strides)
             InsertionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Insertion Almost Sorted").generate_summary().register_output(registry);
         for (const auto bench_case : strides_long)
             InsertionSortBenchmark2(bench_case, 10000, 0.3).runBenchmark("Insertion Almost Sorted").generate_summary().register_output(registry);
     }
 
+    std::string path = "C:\\Users\\Maciek\\source\\repos\\Labolatorium8\\Benchmarks";
+    std::string path2 = "C:\\Users\\Maciej\\source\\repos\\SortingAlgotithms\\Benchmarks2";
 
-    registry.generate_csv("C:\\Users\\Maciej\\source\\repos\\SortingAlgotithms\\Benchmarks2");
+    registry.generate_csv(path);
 }

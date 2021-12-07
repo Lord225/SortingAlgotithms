@@ -3,7 +3,7 @@ import glob
 import os
 import matplotlib.pyplot as plt
 
-path = "Benchmarks2\\"
+path = "Benchmarks\\"
 csv_files = glob.glob(os.path.join(path, "*.csv"))
 
 frames = dict()
@@ -15,7 +15,7 @@ for file in csv_files:
 
 for name, frame in frames.items():
     if "Almost" not in name: 
-        plt.plot(frame["X"], frame[" Y"], label=name)
+        plt.plot(frame["X"], frame["Y"], label=name)
 plt.legend()
 plt.grid()
 plt.show()
