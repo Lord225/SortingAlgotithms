@@ -4,3 +4,7 @@
 <img src="Benchmarks%20Output/Figure_12.png", width="49%"/>
 <img src="Benchmarks%20Output/Figure_13.png", width="49%"/> :
 </p>
+<img src="Benchmarks%20Output/Figure_11.png"/>
+<img src="Benchmarks%20Output/Figure_3.png"/>
+<img src="Benchmarks%20Output/Figure_31.png"/>
+<img src="Benchmarks%20Output/Figure_32.png"/>
